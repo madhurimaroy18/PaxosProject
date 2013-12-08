@@ -1,0 +1,45 @@
+[2013-12-07 23:42:58,873]runtime:INFO: Starting procs...
+[2013-12-07 23:42:58,880]runtime:INFO: Starting procs...
+[2013-12-07 23:42:58,900]runtime:INFO: Starting procs...
+[2013-12-07 23:43:00,002]Client(('Latitude', 14302)):INFO: Received result 0:9 time taken: 0.870553
+[2013-12-07 23:43:00,003]Client(('Latitude', 37037)):INFO: Received result 0:18 time taken: 0.882424
+[2013-12-07 23:43:00,006]Client(('Latitude', 34103)):INFO: Received result 0:27 time taken: 0.894781
+[2013-12-07 23:43:00,007]Client(('Latitude', 20335)):INFO: Received result 0:36 time taken: 0.885702
+[2013-12-07 23:43:00,033]Client(('Latitude', 18372)):INFO: Received result 0:45 time taken: 0.926308
+[2013-12-07 23:43:03,353]Client(('Latitude', 37037)):INFO: Received result 1:54 time taken: 3.205236
+
+[2013-12-07 23:49:04,123]Client(('Latitude', 20335)):INFO: Received result 1:63 time taken: 363.977715
+[2013-12-07 23:49:04,179]Client(('Latitude', 34103)):INFO: Received result 1:72 time taken: 364.029813
+[2013-12-07 23:49:04,222]Client(('Latitude', 14302)):INFO: Received result 1:81 time taken: 364.072512
+[2013-12-07 23:49:04,261]Client(('Latitude', 37037)):INFO: Received result 2:90 time taken: 360.833584
+[2013-12-07 23:49:22,069]Client(('Latitude', 18372)):INFO: Received result 1:99 time taken: 381.928459
+[2013-12-07 23:49:22,087]Client(('Latitude', 20335)):INFO: Received result 2:108 time taken: 17.888546
+[2013-12-07 23:49:22,088]Client(('Latitude', 34103)):INFO: Received result 2:117 time taken: 17.899540
+[2013-12-07 23:49:22,735]Client(('Latitude', 14302)):INFO: Received result 2:126 time taken: 18.501697
+[2013-12-07 23:49:22,736]Client(('Latitude', 37037)):INFO: Received result 3:135 time taken: 18.465924
+[2013-12-07 23:49:26,400]Client(('Latitude', 18372)):INFO: Received result 2:144 time taken: 4.253192
+[2013-12-07 23:49:30,724]Client(('Latitude', 20335)):INFO: Received result 3:153 time taken: 8.569735
+[2013-12-07 23:49:30,726]Client(('Latitude', 37037)):INFO: Received result 4:162 time taken: 7.889081
+[2013-12-07 23:49:30,772]Client(('Latitude', 14302)):INFO: Received result 3:171 time taken: 7.918804
+[2013-12-07 23:49:31,772]Client(('Latitude', 34103)):INFO: Received result 3:180 time taken: 9.619820
+[2013-12-07 23:49:32,072]Client(('Latitude', 18372)):INFO: Received result 3:189 time taken: 5.547110
+[2013-12-07 23:50:33,428]Client(('Latitude', 37037)):INFO: Received result 5:198 time taken: 62.662434
+[2013-12-07 23:50:33,431]Client(('Latitude', 14302)):INFO: Received result 4:207 time taken: 62.647504
+
+[2013-12-07 23:53:30,712]Client(('Latitude', 20335)):INFO: Received result 4:216 time taken: 239.891893
+[2013-12-07 23:53:39,836]Client(('Latitude', 18372)):INFO: Received result 4:234 time taken: 247.630516
+[2013-12-07 23:53:39,836]Client(('Latitude', 34103)):INFO: Received result 4:225 time taken: 247.991514
+[2013-12-07 23:53:39,891]Client(('Latitude', 37037)):INFO: Received result 6:243 time taken: 186.376364
+[2013-12-07 23:53:39,896]Client(('Latitude', 14302)):INFO: Received result 5:252 time taken: 186.390114
+[2013-12-07 23:53:40,429]Client(('Latitude', 20335)):INFO: Received result 5:261 time taken: 9.645336
+
+[2013-12-07 23:55:38,929]Client(('Latitude', 18372)):INFO: Received result 5:279 time taken: 118.959089
+[2013-12-07 23:55:38,931]Client(('Latitude', 14302)):INFO: Received result 6:288 time taken: 118.976293
+[2013-12-07 23:55:38,932]Client(('Latitude', 34103)):INFO: Received result 5:270 time taken: 118.963422
+[2013-12-07 23:55:39,017]Client(('Latitude', 37037)):INFO: Received result 7:297 time taken: 119.080935
+[2013-12-07 23:55:39,057]Client(('Latitude', 20335)):INFO: Received result 6:306 time taken: 118.617370
+
+[2013-12-08 00:02:01,757]Client(('Latitude', 14302)):INFO: Received result 7:315 time taken: 382.742646
+[2013-12-08 00:02:01,767]Client(('Latitude', 34103)):INFO: Received result 6:324 time taken: 382.807757
+[2013-12-08 00:02:01,792]Client(('Latitude', 18372)):INFO: Received result 6:333 time taken: 382.779050
+

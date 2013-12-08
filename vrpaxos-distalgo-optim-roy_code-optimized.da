@@ -1,0 +1,306 @@
+#!/usr/bin/python3
+
+"""  CSE535(Fall 2013): Asynchronous Systems
+     Final Project :   Implementation of Robert van Renesse Multi Paxos with algorithmic optimizations in DistAlgo
+     By: Madhurima Roy
+     SBU ID: 108997204
+     Credit: 3
+     
+     madhurima.roy@stonybrook.edu
+     madhurimaroy18@gmail.com
+"""
+
+#!/usr/bin/python3
+
+from random import randint
+
+NOPS = 10 # Number of operations of the state machine
+lease_timeout = 2
+operations = {i: (lambda state: (state+i,state+i)) for i in range(NOPS)}
+
+class Replica(DistProcess):
+    def setup(leaders, initial_state):
+        state, slot_num = initial_state, 1
+        proposals, decisions = set(), set()
+
+    def main():
+        await(False)
+
+    def propose(p):
+        if not {s for (s, p1) in decisions if p1 == p}:				#checks decision for p already exists
+            maxs = max({0} |
+                       set(s for (s,p1) in proposals) |
+                       set(s for (s,p1) in decisions))
+            s1 = min(s for s in range(1, maxs + 1 + 1)
+                     if not (set(p1 for (s0, p1) in proposals if s0 == s) |
+                             set(p1 for (s0, p1) in decisions if s0 == s)))	#finds lowest unused slot s1
+            proposals.add((s1, p))
+            send(Propose(s1, p), leaders)
+
+    def perform(p):
+        k, cid, op = p
+        if {s for (s, p0) in decisions if p0 == p and s < slot_num}:		#checks if p is already performed
+            slot_num += 1
+        else:
+            next, result = operations[op](state)
+            state, slot_num = next, slot_num + 1
+            send(Response(cid, result), k)
+
+    def OnRequest(p):
+        propose(p)
+
+    def OnReadRequest(p):
+        send(Propose(-2, p), leaders)
+
+    def OnDecision(s, p, lam):
+        decisions.add((s,p))
+        send(AckDecision(s), lam) 						# send a Decisionlam message to Leader about a decision being made
+        while {p1 for (s0,p1) in decisions if s0==slot_num}:
+            p1 = {p1 for (s0,p1) in decisions if s0==slot_num}.pop()
+            for p2 in {p2 for (s0,p2) in proposals if s0==slot_num if p2 != p1}:
+                propose(p2)
+            perform(p1)
+
+    def OnReadDecision(p):
+        output("OnReadDecision")
+        k, cid, op = p
+        send(Response(cid, cid), k)
+
+class Acceptor(DistProcess):
+    def setup():
+        ballot_num = (-1, -1)	# bottom
+        accepted_mod = set()
+        accepted_tmp = set()
+        selected_lam = 0
+        blockP1a = False
+
+    def main():
+        await(False)
+
+    def OnP1a(lam, b, min_slot):
+        if blockP1a:
+            return
+        if b > ballot_num:
+            ballot_num = b
+            selected_lam = lam
+
+        if min_slot == -2: # read request going on
+            blockP1a = True
+            send(P1b(self, ballot_num, selected_lam, accepted_mod), lam)
+            time.sleep(lease_timeout)
+            blockP1a = False
+        else:
+            accepted_tmp = accepted_mod
+            for (b, s, p) in [(b1, s1, p1) for (b1, s1, p1) in accepted_tmp if s1 < min_slot]:
+                accepted_mod.remove((b, s, p))
+            send(P1b(self, ballot_num, selected_lam, accepted_mod), lam)
+
+    def OnP2a(lam, load):
+        if blockP1a:
+            return
+        b, s, p = load
+        if b >= ballot_num:
+            ballot_num = b
+            selected_lam = lam
+            accepted_mod.add((b,s,p))
+        send(P2b(self, ballot_num, selected_lam), lam)
+
+class Leader(DistProcess):
+    def setup(acceptors, replicas):
+        ballot_num = (0, self)
+        active = False
+        lamb_active_local = True
+        proposals = set()
+        undecidedslot = set() # maintain an undecided list
+        Readp = (0, 0, 0)
+        ROFlag = False
+
+    def main():
+        if len(undecidedslot) == 0:
+            min_slot_ = 0
+        else:
+            min_slot_ = min(undecidedslot)
+        spawn(Scout, [self, acceptors, ballot_num, min_slot_])
+        await(False)
+
+    def OnPropose(s, p):
+        if (s == -2): # this is read request
+            ROFlag = True
+            Readp = p
+            spawn(Scout, [self, acceptors, ballot_num, s])
+        else:
+            if not {p1 for (s1, p1) in proposals if s1 == s}:
+                proposals.add((s,p))
+                undecidedslot.add(s)
+                if active:
+                    spawn(Commander, [self, acceptors, replicas, (ballot_num, s, p)])
+
+    def OnAdopted(ballot_num_, pvals):
+        if ballot_num_ == ballot_num:
+            if ROFlag:
+                # read requests responded with a OnAdopted. and this ballot cannot be preempted
+                # send the Ro req back to replica and return
+                send(ReadDecision(Readp), replicas)
+                Readp = (0, 0, 0)
+                ROFlag = False
+                return
+            proposals = circle_plus(proposals, pmax(pvals))
+            for (s, p) in proposals:
+                if any (s1 for s1 in undecidedslot if s1 == s):
+                    spawn(Commander, [self, acceptors, replicas, (ballot_num, s, p)])
+            active = True
+
+    def OnPreempted(b, lamb):
+        r1, lam1 = b
+        if b > ballot_num:
+            active = False
+            ballot_num = (r1+1, self)
+
+            waituntil(1, lamb) # wait for lamb to become inactive or wait till 5 seconds (which is large)
+
+            if len(undecidedslot) == 0:
+                min_slot_ = 0
+            else:
+                min_slot_ = min(undecidedslot)
+            spawn(Scout, [self, acceptors, ballot_num, min_slot_])
+
+    def OnAckDecision(s): # remove the slot that got decided from the decision list
+        if any (s1 for s1 in undecidedslot if s1 == s):
+            undecidedslot.remove(s)
+        for (s,p) in [(s1,p1) for (s1, p1) in proposals if s1 <= s]:
+            proposals.remove((s, p))
+
+    def circle_plus(x, y):
+        return y | {(s, p) for (s, p) in x
+                      if not {p1 for (s0, p1) in y if s0 == s}}
+
+    def pmax(pvals):
+        return {(s, p) for (b, s, p) in pvals
+                if all(b1 <= b for (b1, s0, p1) in pvals if s0 == s)}
+
+    def OnQuery(source):
+        send(Response(active), source)
+
+    def OnResponse(lamb_active):
+        lamb_active_local = lamb_active
+
+    def waituntil(timeout, lamb_id):
+        mustend = time.time() + timeout
+        while time.time() < mustend:
+                send(Query(self), lamb_id)
+                if lamb_active_local == False:
+                       lamb_active_local = True
+                       return True
+        return False
+
+
+class Commander(DistProcess):
+    def setup(lam, acceptors, replicas, load):
+        waitfor = set(acceptors)
+        b, s, p = load
+        done = False
+
+    def main():
+        send(P2a(self, (b, s, p)), acceptors)
+        await(done)
+
+    def OnP2b(a, b1, lamb):
+        if (b1 == b):
+            if a in waitfor:
+                waitfor.remove(a)
+            if len(waitfor) < len(acceptors)/2:
+                send(Decision(s, p, lam), replicas)
+# send(AckDecision(s), lam) # sending this from Replica instead
+                done = True
+        else:
+# output("OnP2b: Sending preempted. b1 = (%d, %d), b = (%d, %d)" % (b1[0], int(b1[1]), b[0]), int(b[1]))
+# output("OnP2b: Sending preempted. b1 = (%d), b = (%d)" % (b1[0], b[0]))
+            send(Preempted(b1, lamb), lam)
+            done = True
+
+
+class Scout(DistProcess):
+    def setup(lam, acceptors, b, min_slot):
+        waitfor = set(acceptors)
+        pvalues = set()
+        done = False
+
+    def main():
+        import time
+        import random
+        time.sleep(random.random())
+        send(P1a(self, b, min_slot), acceptors)
+        await(done)
+
+    def OnP1b(a, b1, lamb, r):
+        if b1 == b:
+            pvalues |= r
+            if a in waitfor:
+                waitfor.remove(a)
+            if len(waitfor) < len(acceptors)/2:
+                send(Adopted(b, pvalues), lam)
+                done = True
+        else:
+# output("OnP1b: Sending preempted. b1 = (%d, %d), b = (%d, %d)" % (b1[0], b1[1], b[0]), b[1])
+# output("OnP1b: Sending preempted. b1 = (%d), b = (%d)" % (b1[0], b[0]))
+            send(Preempted(b1, lamb), lam)
+            done = True
+
+class Client(DistProcess):
+    def setup(replicas):
+        cid = 0
+        results = dict()
+        count = dict()
+
+    def main():
+        while (True):
+            send(Request((self, cid, randint(0, NOPS-1))), replicas)
+            sent = time.time()
+            await(results.get(cid) != None and count.get(cid) == len(replicas))
+            recd = time.time()
+            output("Received result %d:%d time taken: %f" % (cid, results[cid], recd - sent))
+            cid += 1
+
+# roy: sending read only requests
+# send(ReadRequest((self, cid, randint(0, NOPS-1))), replicas)
+# await(results.get(cid) != None and count.get(cid) == len(replicas))
+# output("Received Read result %d:%d" % (cid, results[cid]))
+# cid += 1
+
+    def OnResponse(cid, result):
+        if results.get(cid) == None:
+            results[cid] = result
+            count[cid] = 1
+        else:
+            if results[cid] != result:
+                output("Replicas out of sync at cid(%d) : %d - %d " %
+                       (cid, results[cid], result))
+            else:
+                count[cid] += 1
+
+def main():
+    nacceptors = 20
+    nreplicas = 10
+    nleaders = 5
+    nclients = 5
+    nops = 5
+
+# nacceptors = 1 # 20
+# nreplicas = 1 # 10
+# nleaders = 1 # 5
+# nclients = 1 # 5
+# nops = 1 # 5
+
+    use_channel("tcp")
+
+    acceptors = createprocs(Acceptor, nacceptors, [])
+    replicas = createprocs(Replica, nreplicas)
+    leaders = createprocs(Leader, nleaders, (acceptors, replicas))
+    clients = createprocs(Client, nclients, (replicas,))
+    setupprocs(replicas, (leaders, 0))
+
+    startprocs(acceptors)
+    startprocs(replicas | leaders)
+    startprocs(clients)
+
+    for p in acceptors | replicas | leaders | clients: p.join()
