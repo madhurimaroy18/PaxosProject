@@ -10,7 +10,6 @@
      madhurimaroy18@gmail.com
 """
 
-#!/usr/bin/python3
 
 from random import randint
 
